@@ -1,0 +1,117 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String        @id @default(cuid())
+  name          String
+  email         String        @unique
+  passwordHash  String
+  role          UserRole      @default(MEMBER)
+  isActive      Boolean       @default(true)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  games         Game[]
+  growthScores  GrowthScore[]
+  badges        UserBadge[]
+  leagueEntries LeagueEntry[]
+}
+
+model Game {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  playedAt    DateTime
+  centerName  String
+  laneNumber  Int?
+  totalScore  Int
+  strikeCount Int
+  spareCount  Int
+  openCount   Int
+  note        String?
+  isDetailed  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  frames      Frame[]
+}
+
+model Frame {
+  id          String @id @default(cuid())
+  gameId      String
+  game        Game   @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  frameNumber Int
+  roll1       Int
+  roll2       Int?
+  roll3       Int?
+  frameScore  Int
+}
+
+model GrowthScore {
+  id                     String     @id @default(cuid())
+  userId                 String
+  user                   User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  periodType             PeriodType
+  periodLabel            String
+  score                  Int
+  averageImprovement     Float
+  spareImprovement       Float
+  strikeImprovement      Float
+  consistencyImprovement Float
+  participationBonus     Float
+  calculatedAt           DateTime   @default(now())
+}
+
+model Season {
+  id            String        @id @default(cuid())
+  name          String
+  startDate     DateTime
+  endDate       DateTime
+  isActive      Boolean       @default(false)
+  leagueEntries LeagueEntry[]
+}
+
+model LeagueEntry {
+  id            String @id @default(cuid())
+  seasonId      String
+  season        Season @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+  userId        String
+  user          User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  averageRank   Int?
+  growthRank    Int?
+  highScoreRank Int?
+  handicap      Float?
+  points        Int    @default(0)
+}
+
+model Badge {
+  id          String      @id @default(cuid())
+  name        String      @unique
+  description String
+  icon        String?
+  users       UserBadge[]
+}
+
+model UserBadge {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  badgeId   String
+  badge     Badge    @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+  awardedAt DateTime @default(now())
+}
+
+enum UserRole {
+  ADMIN
+  MEMBER
+}
+
+enum PeriodType {
+  WEEKLY
+  MONTHLY
+  SEASONAL
+}
